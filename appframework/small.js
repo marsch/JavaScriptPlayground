@@ -94,7 +94,9 @@ var ISandbox = new Interface('ISandbox', ['notifiy', 'listen']);
 // Security
 //  - Determine which parts of the framework a module can access
 // Communication
-//  - Translate module requests into  core actions
+//  - Translate module requests into core actions
+//
+
 var Sandbox = function (core) {
   return {
     notify: function () {},
@@ -102,6 +104,12 @@ var Sandbox = function (core) {
   }
 };
 
+
+
+// Extensions
+//  remember: extensions like eclipse (pub/sub)
+//  remember: piping pattern
+//  remember: interceptor pattern
 
 
 // Application Core
@@ -122,7 +130,8 @@ var Sandbox = function (core) {
 // Be extensible
 //  - the first three jobs are not enough
 var Core = function() {
-  var moduleData = {};
+  var moduleData = {},
+      debug = false;
 
   return {
     register: function (moduleId, creator) {
@@ -131,11 +140,32 @@ var Core = function() {
         instance: null
       };
     },
+    createInstance: function (moduleId) {
+      var instance = moduleData[moduleId].creator(new Sandbox(this)),
+          name,
+          method;
+
+      if(!debug) {
+        for (name in instance) {
+          method = instance[name];
+          if( typeof method === 'function') {
+            instance[name] = function (name, method) {
+              return function() {
+                try {
+                  return method.apply(this, arguments);
+                } catch (e) {
+                  console.log(e);
+                }
+              }
+            }(name, method);
+          }
+        }
+      }
+      return instance;
+    },
     start: function (moduleId) {
-      moduleData[moduleId].instance = moduleData[moduleId].creator(new Sandbox(this));
-
+      moduleData[moduleId].instance = this.createInstance(moduleId);
       Interface.ensureImplements(moduleData[moduleId].instance, IModule);
-
       moduleData[moduleId].instance.init();
     },
     stop: function (moduleId) {
