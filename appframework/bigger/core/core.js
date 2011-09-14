@@ -28,7 +28,6 @@ define('core/core', [
   //  - Detect, trap, and report errors in the system
   // Be extensible
   //  - the first three jobs are not enough
-  //
   var Core = function() {
     var moduleData = {},
         debug = false;
